@@ -1,6 +1,6 @@
 # Argo CD Vault Plugin Installation Guide with Helm
 
-This repository provides a simple guide to installing the Argo CD Vault Plugin using Helm and Terraform using sidecar option.  You can easily install argocd-vault-plugin (sidecar installation option) just by changing the parameters of the argocd helm chart.
+This repository provides a simple guide to installing the Argo CD Vault Plugin using Helm and Terraform.  You can easily install argocd-vault-plugin (with sidecar installation option) just by changing the parameters of the argocd helm chart.
 
 ## Prerequisites
 - k8s Cluster
