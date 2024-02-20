@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: wordpress
+  namespace: argocd
+  annotations:
+spec:
+  project: default
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: wordpress
+  source:
+    repoURL: 'https://charts.bitnami.com/bitnami' # URL of the Helm chart repository
+    chart: wordpress
+    targetRevision: '19.0.4' 
+    plugin:
+      env:
+        - name: HELM_VALUES
+          value: |
+            wordpressUsername: user
+            wordpressEmail: values@example.com
+            wordpressBlogName: MyBlog
+            wordpressPassword: <path:path/to/secret#key>

@@ -1,0 +1,77 @@
+configs:
+  cmp:
+    create: true
+    plugins:
+      avp-helm:
+        allowConcurrency: true
+        discover:
+          find:
+            command:
+              - sh
+              - "-c"
+              - "find . -name 'Chart.yaml' && find . -name 'values.yaml'"
+        generate:
+          command:
+            - bash
+            - "-c"
+            - |
+              helm template $ARGOCD_APP_NAME -n $ARGOCD_APP_NAMESPACE -f <(echo "$ARGOCD_ENV_HELM_VALUES") . |
+              argocd-vault-plugin generate -
+        lockRepo: false
+
+
+repoServer:
+  volumes:
+    - configMap:
+        name: argocd-cmp-cm
+      name: argocd-cmp-cm
+    - name: custom-tools
+      emptyDir: {}
+    
+  initContainers:
+    - name: download-tools
+      image: registry.access.redhat.com/ubi8
+      env:
+        - name: AVP_VERSION
+          value: "1.17.0"
+      command: ["sh", "-c"]
+      args:
+        - >-
+          curl -L https://github.com/argoproj-labs/argocd-vault-plugin/releases/download/v1.17.0/argocd-vault-plugin_1.17.0_linux_amd64 -o argocd-vault-plugin &&
+          chmod +x argocd-vault-plugin &&
+          mv argocd-vault-plugin /custom-tools/
+      volumeMounts:
+        - name: custom-tools
+          mountPath: /custom-tools
+
+
+  extraContainers:
+  - name: avp-helm
+    command: [/var/run/argocd/argocd-cmp-server]
+    image: quay.io/argoproj/argocd:v2.10.1
+    env:
+    # configuration  https://argocd-vault-plugin.readthedocs.io/en/stable/config/#environment-variables
+    - name: AVP_TYPE
+      value: awssecretsmanager
+    - name: AWS_REGION
+      value: ap-northeast-1
+    - name: AWS_ACCESS_KEY_ID
+      value: "XXXXXXXXXXXXXXXXXXXXX"
+    - name: AWS_SECRET_ACCESS_KEY
+      value: "XXXXXXXXXXXXXXXXXXXXX"  
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 999
+    volumeMounts:
+      - mountPath: /var/run/argocd
+        name: var-files
+      - mountPath: /home/argocd/cmp-server/plugins
+        name: plugins
+      - mountPath: /tmp
+        name: tmp
+      - mountPath: /home/argocd/cmp-server/config/plugin.yaml
+        subPath: avp-helm.yaml
+        name: argocd-cmp-cm
+      - name: custom-tools
+        subPath: argocd-vault-plugin
+        mountPath: /usr/local/bin/argocd-vault-plugin 
