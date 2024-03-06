@@ -4,20 +4,20 @@ locals {
   cluster_name     = ""
 
 
-  avp_version      = "1.17.0"
-  argocd_version   = "2.10.1"
+  avp_version    = "1.17.0"
+  argocd_version = "2.10.1"
 }
 
 variable "aws_region" {
-  type = string
+  type    = string
   default = "us-west-1"
 }
 variable "AWS_ACCESS_KEY_ID" {
-  type = string
+  type    = string
   default = "xxxxxxxxx"
 }
 variable "AWS_SECRET_ACCESS_KEY" {
-  type = string
+  type    = string
   default = "xxxxxxxxx"
 }
 

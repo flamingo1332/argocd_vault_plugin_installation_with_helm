@@ -1,6 +1,6 @@
 # Argo CD Vault Plugin Installation Guide with Helm
 
-This repository provides a simple guide to installing the Argo CD Vault Plugin using Helm and Terraform.  You can easily install argocd-vault-plugin (with sidecar installation option) just by changing the parameters of the argocd helm chart.
+This repository provides a simple guide to installing the Argo CD Vault Plugin using Helm and Terraform using sidecar option.  You can easily install argocd-vault-plugin (sidecar installation option) just by changing the parameters of the argocd helm chart.
 
 ## Prerequisites
 - k8s Cluster
@@ -35,6 +35,37 @@ configs:
               argocd-vault-plugin generate -
         lockRepo: false
 
+      avp-kustomize:
+        allowConcurrency: true
+        discover:
+          find:
+            command:
+              - find
+              - "."
+              - -name
+              - kustomization.yaml
+        generate:
+          command:
+            - sh
+            - "-c"
+            - "kustomize build . | argocd-vault-plugin generate -"
+        lockRepo: false
+      
+      avp:
+        allowConcurrency: true
+        discover:
+          find:
+            command:
+              - sh
+              - "-c"
+              - "find . -name '*.yaml' | xargs -I {} grep \"<path\\|avp\\.kubernetes\\.io\" {} | grep ."
+        generate:
+          command:
+            - argocd-vault-plugin
+            - generate
+            - "."
+        lockRepo: false
+
 
 repoServer:
   volumes:
@@ -62,6 +93,7 @@ repoServer:
 
 
   extraContainers:
+  # argocd-vault-plugin with Helm
   - name: avp-helm
     command: [/var/run/argocd/argocd-cmp-server]
     image: quay.io/argoproj/argocd:v2.10.1
@@ -91,12 +123,56 @@ repoServer:
       - name: custom-tools
         subPath: argocd-vault-plugin
         mountPath: /usr/local/bin/argocd-vault-plugin 
+  
+  # argocd-vault-plugin with kustomize
+  - name: avp-kustomize
+    command: [/var/run/argocd/argocd-cmp-server]
+    image: quay.io/argoproj/argocd:v2.10.1
+    env:
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 999
+    volumeMounts:
+      - mountPath: /var/run/argocd
+        name: var-files
+      - mountPath: /home/argocd/cmp-server/plugins
+        name: plugins
+      - mountPath: /tmp
+        name: tmp
+      - mountPath: /home/argocd/cmp-server/config/plugin.yaml
+        subPath: avp-kustomize.yaml
+        name: argocd-cmp-cm
+      - name: custom-tools
+        subPath: argocd-vault-plugin
+        mountPath: /usr/local/bin/argocd-vault-plugin
+
+  # argocd-vault-plugin with plain YAML
+  - name: avp
+    command: [/var/run/argocd/argocd-cmp-server]
+    image: quay.io/argoproj/argocd:v2.10.1
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 999
+    volumeMounts:
+      - mountPath: /var/run/argocd
+        name: var-files
+      - mountPath: /home/argocd/cmp-server/plugins
+        name: plugins
+      - mountPath: /tmp
+        name: tmp
+      - mountPath: /home/argocd/cmp-server/config/plugin.yaml
+        subPath: avp.yaml
+        name: argocd-cmp-cm
+      - name: custom-tools
+        subPath: argocd-vault-plugin
+        mountPath: /usr/local/bin/argocd-vault-plugin
+
 
 
 ```
 
 &nbsp;
-### Installation with Terraform, helm terraform provider
+### Installation with Terraform, helm terraform provider(avp-helm)
 ```
 locals {
   cluster_endpoint = ""
@@ -238,7 +314,7 @@ Credentials can be stored in terraform cloud or github actions secret and then i
 
 
 &nbsp;
-### Application manifest example
+### Application manifest example(avp-helm)
 ```
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -262,6 +338,7 @@ spec:
             wordpressUsername: user
             wordpressEmail: values@example.com
             wordpressBlogName: MyBlog
-            wordpressPassword: <path:path/to/secret#password>
+            wordpressPassword: <path:path/to/secret#key>
+
 ```
 You can inject the secret directly into the Argocd application manifest from AVP_TYPE that you specified when installing argocd vault plugin.

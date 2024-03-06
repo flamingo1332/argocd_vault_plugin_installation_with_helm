@@ -10,7 +10,7 @@ spec:
     server: 'https://kubernetes.default.svc'
     namespace: wordpress
   source:
-    repoURL: 'https://charts.bitnami.com/bitnami' # URL of the Helm chart repository
+    repoURL: 'https://charts.bitnami.com/bitnami' 
     chart: wordpress
     targetRevision: '19.0.4' 
     plugin:
