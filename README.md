@@ -307,8 +307,7 @@ resource "helm_release" "argocd" {
 
 ```
 
-Credentials can be stored in terraform cloud or github actions secret and then injected into the sidecar container. This way, there is no need to expose credentials.
-
+Credentials can be stored in terraform cloud or github actions secret and then injected into the sidecar container.
 
 
 
